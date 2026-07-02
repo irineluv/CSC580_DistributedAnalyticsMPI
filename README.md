@@ -1,0 +1,2 @@
+# CSC580_DistributedaAnalyticsMPI
+CSC580 GROUP PROJECT
