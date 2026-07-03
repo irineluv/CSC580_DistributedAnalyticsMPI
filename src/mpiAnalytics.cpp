@@ -171,6 +171,28 @@ if(rank == 0)
     }
 
     //------------------------------------------------------
+    // Local Moving Average
+    //------------------------------------------------------
+
+    const int windowSize = 5;
+
+    vector<double> localMovingAverage(localSize);
+
+    for(int i = 0; i < localSize; i++)
+    {
+        double sum = 0.0;
+        int count = 0;
+
+        for(int j = max(0, i - windowSize + 1); j <= i; j++)
+        {
+            sum += localX[j];
+            count++;
+        }
+
+        localMovingAverage[i] = sum / count;
+    }
+
+    //------------------------------------------------------
     // Pearson Correlation (Local)
     //------------------------------------------------------
 
@@ -253,7 +275,27 @@ if(rank == 0)
         
 
         vector<int> globalHistogram(bins, 0);
+        vector<double> globalMovingAverage;
 
+        if(rank == 0)
+        {
+            globalMovingAverage.resize(datasetSize);
+        }
+        
+        //------------------------------------------------------
+        // Gather Moving Average to Master
+        //------------------------------------------------------
+
+        MPI_Gather(
+            localMovingAverage.data(),
+            localSize,
+            MPI_DOUBLE,
+            globalMovingAverage.data(),
+            localSize,
+            MPI_DOUBLE,
+            0,
+            MPI_COMM_WORLD
+        );
         
 
     MPI_Reduce(
@@ -422,6 +464,16 @@ if(rank == 0)
                 << globalHistogram[i]
                 << endl;
         }
+        cout << "\n========== MOVING AVERAGE (First 10 Values) ==========" << endl;
+
+        for(int i = 0; i < min(10, datasetSize); i++)
+        {
+            cout << "MA[" << i << "] = "
+                << globalMovingAverage[i]
+                << endl;
+        }
+
+        cout << "======================================================" << endl;
 
         cout << "===============================" << endl;
         cout << endl;
