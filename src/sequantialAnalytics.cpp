@@ -137,7 +137,6 @@ int main(int argc, char *argv[])
     int N = stoi(argv[1]);
 
     ofstream file("seq_log.txt");
-    file << "Task,Time(ms)\n";
 
     vector<double> a = generate(N);
     vector<double> b = generate(N);
@@ -181,6 +180,13 @@ int main(int argc, char *argv[])
     auto o = outliers(a, mean, stdv);
     e = timeNow();
     t_out = e - s;
+
+    file << "Stats: " << t_stats << " ms\n";
+    file << "Histogram: " << t_hist << " ms\n";
+    file << "Sort: " << t_sort << " ms\n";
+    file << "Correlation: " << t_corr << " ms\n";
+    file << "MovingAvg: " << t_mov << " ms\n";
+    file << "Outliers: " << t_out << " ms\n";
 
     cout << "\n========== SEQUENTIAL RESULTS ==========\n";
 
