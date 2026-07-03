@@ -140,6 +140,21 @@ if(rank == 0)
 
     // Local Mean
     double localMean = localSum / localSize;
+
+    //------------------------------------------------------
+    // Local Histogram
+    //------------------------------------------------------
+
+    const int bins = 10;
+
+    vector<int> localHistogram(bins, 0);
+
+    for(double value : localData)
+    {
+        int index = min((int)(value / 10000.0 * bins), bins - 1);
+        localHistogram[index]++;
+    }
+
     //------------------------------------------------------
     // Local Variance
     //------------------------------------------------------
@@ -190,6 +205,8 @@ if(rank == 0)
         double globalMax = 0.0;
         double globalVariance = 0.0;
 
+        vector<int> globalHistogram(bins, 0);
+
         
 
     MPI_Reduce(
@@ -227,6 +244,16 @@ if(rank == 0)
     &globalVariance,
     1,
     MPI_DOUBLE,
+    MPI_SUM,
+    0,
+    MPI_COMM_WORLD
+    );
+
+    MPI_Reduce(
+    localHistogram.data(),
+    globalHistogram.data(),
+    bins,
+    MPI_INT,
     MPI_SUM,
     0,
     MPI_COMM_WORLD
@@ -270,6 +297,18 @@ if(rank == 0)
         cout << "Global Min  : " << globalMin << endl;
         cout << "Global Max  : " << globalMax << endl;
         cout << "Global Standard Deviation : "<< globalStdDev << endl;
+        
+        cout << "\n========== HISTOGRAM ==========" << endl;
+        for(int i = 0; i < bins; i++)
+        {
+            cout << "Bin "
+                << i + 1
+                << " : "
+                << globalHistogram[i]
+                << endl;
+        }
+
+        cout << "===============================" << endl;
         cout << endl;
 
         cout << "MPI Execution Time : "
