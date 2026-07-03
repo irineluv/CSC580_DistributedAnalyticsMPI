@@ -203,6 +203,7 @@ if(rank == 0)
         localVariance += (value - localMean) * (value - localMean);
     }
 
+
     vector<double> processMean(worldSize);
  
     // Gather local means to Master
@@ -246,6 +247,9 @@ if(rank == 0)
         double globalMin = 0.0;
         double globalMax = 0.0;
         double globalVariance = 0.0;
+        double globalMean = 0.0;
+        double globalStdDev = 0.0;
+        
 
         vector<int> globalHistogram(bins, 0);
 
@@ -282,23 +286,23 @@ if(rank == 0)
     );
 
     MPI_Reduce(
-    &localVariance,
-    &globalVariance,
-    1,
-    MPI_DOUBLE,
-    MPI_SUM,
-    0,
-    MPI_COMM_WORLD
+        &localVariance,
+        &globalVariance,
+        1,
+        MPI_DOUBLE,
+        MPI_SUM,
+        0,
+        MPI_COMM_WORLD
     );
 
     MPI_Reduce(
-    localHistogram.data(),
-    globalHistogram.data(),
-    bins,
-    MPI_INT,
-    MPI_SUM,
-    0,
-    MPI_COMM_WORLD
+        localHistogram.data(),
+        globalHistogram.data(),
+        bins,
+        MPI_INT,
+        MPI_SUM,
+        0,
+        MPI_COMM_WORLD
     );
 
     MPI_Reduce(&localSumX, &globalSumX, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -311,6 +315,16 @@ if(rank == 0)
 
     MPI_Reduce(&localSumY2, &globalSumY2, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
+    MPI_Reduce(
+        &localOutliers,
+        &globalOutliers,
+        1,
+        MPI_INT,
+        MPI_SUM,
+        0,
+        MPI_COMM_WORLD
+    );
+
     // Stop timer
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -321,13 +335,58 @@ if(rank == 0)
     
     if(rank == 0)
     {
-        double globalMean = globalSum / datasetSize;
+        globalMean = globalSum / datasetSize;
 
         globalVariance /= datasetSize;
 
-        double globalStdDev = sqrt(globalVariance);
+        globalStdDev = sqrt(globalVariance);
+    }
 
-        cout << "\n========== PROCESS SUMMARY ==========" << endl;
+        //------------------------------------------------------
+        // Broadcast Global Statistics
+        //------------------------------------------------------
+
+        MPI_Bcast(&globalMean,
+                1,
+                MPI_DOUBLE,
+                0,
+                MPI_COMM_WORLD);
+
+        MPI_Bcast(&globalStdDev,
+                1,
+                MPI_DOUBLE,
+                0,
+                MPI_COMM_WORLD);
+
+    //------------------------------------------------------
+    // Local Outlier Detection (All Processes)
+    //------------------------------------------------------
+
+    int localOutliers = 0;
+
+    for(double value : localX)
+    {
+        double z = (value - globalMean) / globalStdDev;
+
+        if(fabs(z) > 3.0)
+        {
+            localOutliers++;
+        }
+    }
+
+    MPI_Reduce(
+        &localOutliers,
+        &globalOutliers,
+        1,
+        MPI_INT,
+        MPI_SUM,
+        0,
+        MPI_COMM_WORLD
+    );
+
+    if(rank == 0)
+    {
+                cout << "\n========== PROCESS SUMMARY ==========" << endl;
 
         double numerator =
             datasetSize * globalSumXY -
@@ -361,7 +420,7 @@ if(rank == 0)
         cout << "Global Max  : " << globalMax << endl;
         cout << "Global Standard Deviation : "<< globalStdDev << endl;
         cout << "Pearson Correlation       : "<< correlation << endl;
-
+        cout << "Outliers Detected        : " << globalOutliers << endl;
         cout << "\n========== HISTOGRAM ==========" << endl;
         for(int i = 0; i < bins; i++)
         {
@@ -380,7 +439,7 @@ if(rank == 0)
             << " seconds"
             << endl;
     }
-
+    
     // Finish MPI
 
     MPI_Finalize();
