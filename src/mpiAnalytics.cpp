@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <cmath>
 #include <iostream>
 #include <vector>
 #include <random>
@@ -6,6 +7,7 @@
 #include <algorithm>
 #include <chrono>
 #include "dataset.cpp"
+
 
 using namespace std;
 
@@ -117,6 +119,9 @@ if(rank == 0)
 
     // Each process calculates local statistics
 
+//------------------------------------------------------
+// Local Statistics
+//------------------------------------------------------
 
     double localSum = 0.0;
     double localMin = localData[0];
@@ -133,8 +138,18 @@ if(rank == 0)
             localMax = value;
     }
 
-    // Local mean (for display/debugging)
+    // Local Mean
     double localMean = localSum / localSize;
+    //------------------------------------------------------
+    // Local Variance
+    //------------------------------------------------------
+
+    double localVariance = 0.0;
+
+    for(double value : localData)
+    {
+        localVariance += (value - localMean) * (value - localMean);
+    }
 
     vector<double> processMean(worldSize);
  
@@ -173,6 +188,7 @@ if(rank == 0)
         double globalSum = 0.0;
         double globalMin = 0.0;
         double globalMax = 0.0;
+        double globalVariance = 0.0;
 
         
 
@@ -206,6 +222,16 @@ if(rank == 0)
         MPI_COMM_WORLD
     );
 
+    MPI_Reduce(
+    &localVariance,
+    &globalVariance,
+    1,
+    MPI_DOUBLE,
+    MPI_SUM,
+    0,
+    MPI_COMM_WORLD
+    );
+
     // Stop timer
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -217,6 +243,10 @@ if(rank == 0)
     if(rank == 0)
     {
         double globalMean = globalSum / datasetSize;
+
+        globalVariance /= datasetSize;
+
+        double globalStdDev = sqrt(globalVariance);
 
         cout << "\n========== PROCESS SUMMARY ==========" << endl;
 
@@ -239,7 +269,7 @@ if(rank == 0)
         cout << "Global Mean : " << globalMean << endl;
         cout << "Global Min  : " << globalMin << endl;
         cout << "Global Max  : " << globalMax << endl;
-
+        cout << "Global Standard Deviation : "<< globalStdDev << endl;
         cout << endl;
 
         cout << "MPI Execution Time : "
