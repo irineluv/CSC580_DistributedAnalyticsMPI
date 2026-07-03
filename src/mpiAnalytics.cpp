@@ -247,6 +247,7 @@ if(rank == 0)
         double globalMin = 0.0;
         double globalMax = 0.0;
         double globalVariance = 0.0;
+        int globalOutliers = 0;
         double globalMean = 0.0;
         double globalStdDev = 0.0;
         
@@ -315,15 +316,6 @@ if(rank == 0)
 
     MPI_Reduce(&localSumY2, &globalSumY2, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    MPI_Reduce(
-        &localOutliers,
-        &globalOutliers,
-        1,
-        MPI_INT,
-        MPI_SUM,
-        0,
-        MPI_COMM_WORLD
-    );
 
     // Stop timer
 
