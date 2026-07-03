@@ -5,26 +5,10 @@
 #include <numeric>
 #include <algorithm>
 #include <chrono>
+#include "dataset.cpp"
 
 using namespace std;
 
-// Generate synthetic dataset
-
-vector<double> generateDataset(int size)
-{
-    vector<double> data(size);
-
-    mt19937_64 rng(42);
-
-    uniform_real_distribution<double> dist(0.0,10000.0);
-
-    for(int i=0;i<size;i++)
-    {
-        data[i]=dist(rng);
-    }
-
-    return data;
-}
 
 // Main Program
 
@@ -41,10 +25,16 @@ int main(int argc,char* argv[])
 
     int datasetSize=1000000;
 
-    if(argc>1)
-    {
-        datasetSize=stoi(argv[1]);
-    }
+    if(argc < 2)
+{
+    if(rank == 0)
+        cout << "Usage: mpiexec -n <processes> mpi_analytics <dataset_size>" << endl;
+
+    MPI_Finalize();
+    return 1;
+}
+
+datasetSize = stoi(argv[1]);
 
     vector<double> dataset;
 
@@ -160,13 +150,22 @@ if(rank == 0)
         MPI_COMM_WORLD
     );
 
-    cout << "Process "
-        << rank
-        << " processed "
-        << localSize
-        << " values."
-        << endl;
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    for(int i = 0; i < worldSize; i++)
+    {
+        if(rank == i)
+        {
+            cout << "Process "
+                << rank
+                << " processed "
+                << localSize
+                << " values."
+                << endl;
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
     // Combine results from all processes
   
     // Master Result Variables
