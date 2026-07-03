@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 
     int N = stoi(argv[1]);
 
-    ofstream file("seq_log.csv");
+    ofstream file("seq_log.txt");
     file << "Task,Time(ms)\n";
 
     vector<double> a = generate(N);
@@ -149,37 +149,54 @@ int main(int argc, char *argv[])
     double mean, minV, maxV, stdv;
     stats(a, mean, minV, maxV, stdv);
     e = timeNow();
-    file << "Stats," << e - s << "\n";
+    file << "Stats Time: " << e - s << " ms\n";
 
     // 2 HISTOGRAM
     s = timeNow();
     auto h = histogram(a);
     e = timeNow();
-    file << "Histogram," << e - s << "\n";
+    file << "Histogram Time: " << e - s << " ms\n";
 
     // 3 SORT
     s = timeNow();
     sortData(a);
     e = timeNow();
-    file << "Sort," << e - s << "\n";
+    file << "Sort Time: " << e - s << " ms\n";
 
     // 4 CORR
     s = timeNow();
     double c = corr(a, b);
     e = timeNow();
-    file << "Correlation," << e - s << "\n";
+    file << "Correlation Time: " << e - s << " ms\n";
 
     // 5 MOVING AVG
     s = timeNow();
     auto m = movingAvg(a);
     e = timeNow();
-    file << "MovingAvg," << e - s << "\n";
+    file << "MovingAvg Time: " << e - s << " ms\n";
 
     // 6 OUTLIERS
     s = timeNow();
     auto o = outliers(a, mean, stdv);
     e = timeNow();
-    file << "Outliers," << e - s << "\n";
+    file << "Outliers Time: " << e - s << " ms\n";
+
+    cout << "\n========== SEQUENTIAL RESULTS ==========\n";
+
+    cout << "Mean: " << mean << endl;
+    cout << "Min: " << minV << endl;
+    cout << "Max: " << maxV << endl;
+    cout << "Std Dev: " << stdv << endl;
+
+    cout << "\nExecution Times (ms):\n";
+    cout << "Stats: " << (t_stats) << endl;
+    cout << "Histogram: " << (t_hist) << endl;
+    cout << "Sort: " << (t_sort) << endl;
+    cout << "Correlation: " << (t_corr) << endl;
+    cout << "Moving Avg: " << (t_mov) << endl;
+    cout << "Outliers: " << (t_out) << endl;
+
+    cout << "=======================================\n";
 
     file.close();
 
