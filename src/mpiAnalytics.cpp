@@ -38,7 +38,8 @@ int main(int argc,char* argv[])
 
 datasetSize = stoi(argv[1]);
 
-    vector<double> dataset;
+    vector<double> datasetX;
+    vector<double> datasetY;
 
     if(rank==0)
     {
@@ -49,7 +50,8 @@ datasetSize = stoi(argv[1]);
         cout<<"Total Processes : "<<worldSize<<endl;
         cout<<"Dataset Size    : "<<datasetSize<<endl;
 
-        dataset=generateDataset(datasetSize);
+        datasetX = generateDataset(datasetSize, 42);
+        datasetY = generateDataset(datasetSize, 99);
 
         cout<<"Dataset Generated Successfully"<<endl;
     }
@@ -66,7 +68,8 @@ datasetSize = stoi(argv[1]);
 
    int localSize = datasetSize / worldSize;
 
-    vector<double> localData(localSize);
+    vector<double> localX(localSize);
+    vector<double> localY(localSize);
 
 // Master calculates workload distribution
 
@@ -106,17 +109,29 @@ if(rank == 0)
 
     // Scatter dataset from Master to all processes
 
+    // Scatter Dataset X
     MPI_Scatter(
-        dataset.data(),          // Send buffer (Master only)
-        localSize,               // Number of elements for each process
+        datasetX.data(),
+        localSize,
         MPI_DOUBLE,
-        localData.data(),        // Receive buffer
+        localX.data(),
         localSize,
         MPI_DOUBLE,
         0,
         MPI_COMM_WORLD
     );
 
+    // Scatter Dataset Y
+    MPI_Scatter(
+        datasetY.data(),
+        localSize,
+        MPI_DOUBLE,
+        localY.data(),
+        localSize,
+        MPI_DOUBLE,
+        0,
+        MPI_COMM_WORLD
+    );
     // Each process calculates local statistics
 
 //------------------------------------------------------
@@ -124,10 +139,10 @@ if(rank == 0)
 //------------------------------------------------------
 
     double localSum = 0.0;
-    double localMin = localData[0];
-    double localMax = localData[0];
+    double localMin = localX[0];
+    double localMax = localX[0];
 
-    for(double value : localData)
+    for(double value : localX)
     {
         localSum += value;
 
@@ -149,10 +164,32 @@ if(rank == 0)
 
     vector<int> localHistogram(bins, 0);
 
-    for(double value : localData)
+    for(double value : localX)
     {
         int index = min((int)(value / 10000.0 * bins), bins - 1);
         localHistogram[index]++;
+    }
+
+    //------------------------------------------------------
+    // Pearson Correlation (Local)
+    //------------------------------------------------------
+
+    double localSumX = 0.0;
+    double localSumY = 0.0;
+    double localSumXY = 0.0;
+    double localSumX2 = 0.0;
+    double localSumY2 = 0.0;
+
+    for(int i = 0; i < localSize; i++)
+    {
+        localSumX += localX[i];
+        localSumY += localY[i];
+
+        localSumXY += localX[i] * localY[i];
+
+        localSumX2 += localX[i] * localX[i];
+
+        localSumY2 += localY[i] * localY[i];
     }
 
     //------------------------------------------------------
@@ -161,7 +198,7 @@ if(rank == 0)
 
     double localVariance = 0.0;
 
-    for(double value : localData)
+    for(double value : localX)
     {
         localVariance += (value - localMean) * (value - localMean);
     }
@@ -201,6 +238,11 @@ if(rank == 0)
     // Master Result Variables
 
         double globalSum = 0.0;
+        double globalSumX = 0.0;
+        double globalSumY = 0.0;
+        double globalSumXY = 0.0;
+        double globalSumX2 = 0.0;
+        double globalSumY2 = 0.0;
         double globalMin = 0.0;
         double globalMax = 0.0;
         double globalVariance = 0.0;
@@ -259,6 +301,16 @@ if(rank == 0)
     MPI_COMM_WORLD
     );
 
+    MPI_Reduce(&localSumX, &globalSumX, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    MPI_Reduce(&localSumY, &globalSumY, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    MPI_Reduce(&localSumXY, &globalSumXY, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    MPI_Reduce(&localSumX2, &globalSumX2, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    MPI_Reduce(&localSumY2, &globalSumY2, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
     // Stop timer
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -277,6 +329,17 @@ if(rank == 0)
 
         cout << "\n========== PROCESS SUMMARY ==========" << endl;
 
+        double numerator =
+            datasetSize * globalSumXY -
+            globalSumX * globalSumY;
+
+        double denominator =
+            sqrt(
+                (datasetSize * globalSumX2 - globalSumX * globalSumX) *
+                (datasetSize * globalSumY2 - globalSumY * globalSumY)
+            );
+
+        double correlation = numerator / denominator;
         for(int i = 0; i < worldSize; i++)
         {
             cout << "Process "
@@ -297,7 +360,8 @@ if(rank == 0)
         cout << "Global Min  : " << globalMin << endl;
         cout << "Global Max  : " << globalMax << endl;
         cout << "Global Standard Deviation : "<< globalStdDev << endl;
-        
+        cout << "Pearson Correlation       : "<< correlation << endl;
+
         cout << "\n========== HISTOGRAM ==========" << endl;
         for(int i = 0; i < bins; i++)
         {
