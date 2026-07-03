@@ -193,6 +193,13 @@ if(rank == 0)
     }
 
     //------------------------------------------------------
+    // Local Sorting
+    //------------------------------------------------------
+
+    sort(localX.begin(), localX.end());
+
+
+    //------------------------------------------------------
     // Pearson Correlation (Local)
     //------------------------------------------------------
 
@@ -276,12 +283,18 @@ if(rank == 0)
 
         vector<int> globalHistogram(bins, 0);
         vector<double> globalMovingAverage;
+        vector<double> globalSortedData;
 
         if(rank == 0)
         {
             globalMovingAverage.resize(datasetSize);
         }
-        
+
+        if(rank == 0)
+        {
+            globalSortedData.resize(datasetSize);
+        }
+
         //------------------------------------------------------
         // Gather Moving Average to Master
         //------------------------------------------------------
@@ -291,6 +304,17 @@ if(rank == 0)
             localSize,
             MPI_DOUBLE,
             globalMovingAverage.data(),
+            localSize,
+            MPI_DOUBLE,
+            0,
+            MPI_COMM_WORLD
+        );
+
+        MPI_Gather(
+            localX.data(),
+            localSize,
+            MPI_DOUBLE,
+            globalSortedData.data(),   // <-- Compiler stops here
             localSize,
             MPI_DOUBLE,
             0,
@@ -464,6 +488,8 @@ if(rank == 0)
                 << globalHistogram[i]
                 << endl;
         }
+        cout << "===============================" << endl;
+        
         cout << "\n========== MOVING AVERAGE (First 10 Values) ==========" << endl;
 
         for(int i = 0; i < min(10, datasetSize); i++)
@@ -472,10 +498,16 @@ if(rank == 0)
                 << globalMovingAverage[i]
                 << endl;
         }
-
         cout << "======================================================" << endl;
+        
+        cout << "\n========== SORTED DATA (First 20 Values) ==========" << endl;
 
-        cout << "===============================" << endl;
+        for(int i = 0; i < min(20, datasetSize); i++)
+        {
+            cout << globalSortedData[i] << endl;
+        }
+        cout << "===================================================" << endl;
+
         cout << endl;
 
         cout << "MPI Execution Time : "
