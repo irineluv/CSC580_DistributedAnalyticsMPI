@@ -143,43 +143,44 @@ int main(int argc, char *argv[])
     vector<double> b = generate(N);
 
     double s, e;
+    double t_stats, t_hist, t_sort, t_corr, t_mov, t_out;
+    double mean, minV, maxV, stdv;
 
     // 1 STATS
     s = timeNow();
-    double mean, minV, maxV, stdv;
     stats(a, mean, minV, maxV, stdv);
     e = timeNow();
-    file << "Stats Time: " << e - s << " ms\n";
+    t_stats = e - s;
 
     // 2 HISTOGRAM
     s = timeNow();
     auto h = histogram(a);
     e = timeNow();
-    file << "Histogram Time: " << e - s << " ms\n";
+    t_hist = e - s;
 
     // 3 SORT
     s = timeNow();
     sortData(a);
     e = timeNow();
-    file << "Sort Time: " << e - s << " ms\n";
+    t_sort = e - s;
 
     // 4 CORR
     s = timeNow();
     double c = corr(a, b);
     e = timeNow();
-    file << "Correlation Time: " << e - s << " ms\n";
+    t_corr = e - s;
 
     // 5 MOVING AVG
     s = timeNow();
     auto m = movingAvg(a);
     e = timeNow();
-    file << "MovingAvg Time: " << e - s << " ms\n";
+    t_mov = e - s;
 
     // 6 OUTLIERS
     s = timeNow();
     auto o = outliers(a, mean, stdv);
     e = timeNow();
-    file << "Outliers Time: " << e - s << " ms\n";
+    t_out = e - s;
 
     cout << "\n========== SEQUENTIAL RESULTS ==========\n";
 
