@@ -206,19 +206,19 @@ int main(int argc, char *argv[])
     cout << "======================================\n";
 
     cout << "\n[1] STATISTICS\n";
-    cout << "\n------------------------------\n";
+    cout << "------------------------------\n";
     cout << "Mean    : " << mean << endl;
     cout << "Min     : " << minV << endl;
     cout << "Max     : " << maxV << endl;
     cout << "Std Dev : " << stdv << endl;
 
     cout << "\n[2] HISTOGRAM (first 5 bins)\n";
-    cout << "\n------------------------------\n";
+    cout << "------------------------------\n";
     for (int i = 0; i < 5; i++)
         cout << "Bin " << i << ": " << h[i] << endl;
 
     cout << "\n[3] SORT (first 20 values)\n";
-    cout << "\n------------------------------\n";
+    cout << "------------------------------\n";
     cout << "\n";
     for (int i = 0; i < 20; i++)
     {
@@ -226,11 +226,11 @@ int main(int argc, char *argv[])
     }
 
     cout << "\n[4] CORRELATION\n";
-    cout << "\n------------------------------\n";
+    cout << "------------------------------\n";
     cout << "Value : " << c << endl;
 
     cout << "\n[5] MOVING AVERAGE (first 10)\n";
-    cout << "\n------------------------------\n";
+    cout << "------------------------------\n";
     cout << "\n";
     for (int i = 0; i < 10; i++)
     {
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
     }
 
     cout << "\n[6] OUTLIERS\n";
-    cout << "\n------------------------------\n";
+    cout << "------------------------------\n";
     cout << "Count : " << o.size() << endl;
 
     cout << "\n========== EXECUTION TIMES (ms) ==========\n";
