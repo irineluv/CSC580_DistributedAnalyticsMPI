@@ -4,7 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\MPI\\MS_MPI\\SDK\\Include"
+                "C:\\Program Files\\Microsoft MPI\\Bin"
             ],
             "defines": [
                 "_DEBUG",

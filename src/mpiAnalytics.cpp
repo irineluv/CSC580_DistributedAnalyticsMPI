@@ -19,6 +19,11 @@ int main(int argc,char* argv[])
 
     MPI_Init(&argc,&argv);
 
+    double computationTime = 0.0;
+    double communicationTime = 0.0;
+    double compStart, compEnd;
+    double commStart, commEnd;
+
     int rank;
     int worldSize;
 
@@ -70,6 +75,49 @@ datasetSize = stoi(argv[1]);
 
     vector<double> localX(localSize);
     vector<double> localY(localSize);
+
+    //------------------------------------------------------
+    // Global Variables (Master)
+    //------------------------------------------------------
+
+    double globalSum = 0.0;
+    double globalSumX = 0.0;
+    double globalSumY = 0.0;
+    double globalSumXY = 0.0;
+    double globalSumX2 = 0.0;
+    double globalSumY2 = 0.0;
+
+    double globalMin = 0.0;
+    double globalMax = 0.0;
+    double globalVariance = 0.0;
+
+    double globalMean = 0.0;
+    double globalStdDev = 0.0;
+
+    int globalOutliers = 0;
+
+    const int bins = 10;
+
+    vector<int> globalHistogram;
+
+    if(rank == 0)
+    {
+        globalHistogram.resize(bins);
+    }
+
+    vector<double> globalMovingAverage;
+
+    if(rank == 0)
+    {
+        globalMovingAverage.resize(datasetSize);
+    }
+
+    vector<double> globalSortedData;
+
+    if(rank == 0)
+    {
+        globalSortedData.resize(datasetSize);
+    }
 
 // Master calculates workload distribution
 
@@ -133,11 +181,16 @@ if(rank == 0)
         MPI_COMM_WORLD
     );
     // Each process calculates local statistics
+    //------------------------------------------------------
+    // Statistics Timer
+    //------------------------------------------------------
 
-//------------------------------------------------------
+    MPI_Barrier(MPI_COMM_WORLD);
+    double statsStart = MPI_Wtime();
+
+
 // Local Statistics
-//------------------------------------------------------
-
+    compStart = MPI_Wtime();
     double localSum = 0.0;
     double localMin = localX[0];
     double localMax = localX[0];
@@ -153,31 +206,62 @@ if(rank == 0)
             localMax = value;
     }
 
+    compEnd = MPI_Wtime();
+    computationTime += compEnd - compStart;
+
     // Local Mean
     double localMean = localSum / localSize;
 
     //------------------------------------------------------
     // Local Histogram
     //------------------------------------------------------
-
-    const int bins = 10;
+        
+    MPI_Barrier(MPI_COMM_WORLD);
+    double histogramStart = MPI_Wtime();
 
     vector<int> localHistogram(bins, 0);
-
+    compStart = MPI_Wtime();
     for(double value : localX)
     {
         int index = min((int)(value / 10000.0 * bins), bins - 1);
         localHistogram[index]++;
     }
 
+     compEnd = MPI_Wtime();
+
+    computationTime += compEnd-compStart;
+    
+    commStart = MPI_Wtime();
+
+        MPI_Reduce(
+        localHistogram.data(),
+        globalHistogram.data(),
+        bins,
+        MPI_INT,
+        MPI_SUM,
+        0,
+        MPI_COMM_WORLD
+    );
+
+    commEnd = MPI_Wtime();
+
+    communicationTime += commEnd-commStart;
+        MPI_Barrier(MPI_COMM_WORLD);
+        double histogramEnd = MPI_Wtime();
+        double histogramTime = histogramEnd - histogramStart;
+
     //------------------------------------------------------
     // Local Moving Average
     //------------------------------------------------------
 
+    MPI_Barrier(MPI_COMM_WORLD);
+    double movingAverageStart = MPI_Wtime();
+
     const int windowSize = 5;
 
     vector<double> localMovingAverage(localSize);
-
+    
+    compStart = MPI_Wtime();
     for(int i = 0; i < localSize; i++)
     {
         double sum = 0.0;
@@ -191,6 +275,35 @@ if(rank == 0)
 
         localMovingAverage[i] = sum / count;
     }
+    
+    compEnd = MPI_Wtime();
+
+    computationTime += compEnd-compStart;
+
+    commStart = MPI_Wtime();
+    MPI_Gather(
+        localMovingAverage.data(),
+        localSize,
+        MPI_DOUBLE,
+        globalMovingAverage.data(),
+        localSize,
+        MPI_DOUBLE,
+        0,
+        MPI_COMM_WORLD
+    );
+
+    commEnd = MPI_Wtime();
+
+    communicationTime += commEnd-commStart;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    double movingAverageEnd = MPI_Wtime();
+
+    double movingAverageTime =
+    movingAverageEnd-movingAverageStart;
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    double sortStart = MPI_Wtime();
 
     //------------------------------------------------------
     // Local Sorting
@@ -198,17 +311,24 @@ if(rank == 0)
 
     sort(localX.begin(), localX.end());
 
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    double sortEnd = MPI_Wtime();
+
+    double sortTime = sortEnd - sortStart;
     //------------------------------------------------------
     // Pearson Correlation (Local)
     //------------------------------------------------------
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    double correlationStart = MPI_Wtime();
     double localSumX = 0.0;
     double localSumY = 0.0;
     double localSumXY = 0.0;
     double localSumX2 = 0.0;
     double localSumY2 = 0.0;
 
+    compStart = MPI_Wtime();
     for(int i = 0; i < localSize; i++)
     {
         localSumX += localX[i];
@@ -220,6 +340,10 @@ if(rank == 0)
 
         localSumY2 += localY[i] * localY[i];
     }
+    
+    compEnd = MPI_Wtime();
+
+    computationTime += compEnd-compStart;
 
     //------------------------------------------------------
     // Local Variance
@@ -232,97 +356,12 @@ if(rank == 0)
         localVariance += (value - localMean) * (value - localMean);
     }
 
+    compEnd = MPI_Wtime();
 
-    vector<double> processMean(worldSize);
- 
-    // Gather local means to Master
-    MPI_Gather(
-        &localMean,
-        1,
-        MPI_DOUBLE,
-        processMean.data(),
-        1,
-        MPI_DOUBLE,
-        0,
-        MPI_COMM_WORLD
-    );
+    computationTime += compEnd - compStart;
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    for(int i = 0; i < worldSize; i++)
-    {
-        if(rank == i)
-        {
-            cout << "Process "
-                << rank
-                << " processed "
-                << localSize
-                << " values."
-                << endl;
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
-    // Combine results from all processes
-  
-    // Master Result Variables
-
-        double globalSum = 0.0;
-        double globalSumX = 0.0;
-        double globalSumY = 0.0;
-        double globalSumXY = 0.0;
-        double globalSumX2 = 0.0;
-        double globalSumY2 = 0.0;
-        double globalMin = 0.0;
-        double globalMax = 0.0;
-        double globalVariance = 0.0;
-        int globalOutliers = 0;
-        double globalMean = 0.0;
-        double globalStdDev = 0.0;
-        
-
-        vector<int> globalHistogram(bins, 0);
-        vector<double> globalMovingAverage;
-        vector<double> globalSortedData;
-
-        if(rank == 0)
-        {
-            globalMovingAverage.resize(datasetSize);
-        }
-
-        if(rank == 0)
-        {
-            globalSortedData.resize(datasetSize);
-        }
-
-        //------------------------------------------------------
-        // Gather Moving Average to Master
-        //------------------------------------------------------
-
-        MPI_Gather(
-            localMovingAverage.data(),
-            localSize,
-            MPI_DOUBLE,
-            globalMovingAverage.data(),
-            localSize,
-            MPI_DOUBLE,
-            0,
-            MPI_COMM_WORLD
-        );
-
-        MPI_Gather(
-            localX.data(),
-            localSize,
-            MPI_DOUBLE,
-            globalSortedData.data(),   // <-- Compiler stops here
-            localSize,
-            MPI_DOUBLE,
-            0,
-            MPI_COMM_WORLD
-        );
-        
-
-    MPI_Reduce(
+    commStart = MPI_Wtime();
+        MPI_Reduce(
         &localSum,
         &globalSum,
         1,
@@ -362,15 +401,60 @@ if(rank == 0)
         MPI_COMM_WORLD
     );
 
-    MPI_Reduce(
-        localHistogram.data(),
-        globalHistogram.data(),
-        bins,
-        MPI_INT,
-        MPI_SUM,
+    commEnd = MPI_Wtime();
+
+    communicationTime += commEnd-commStart;
+
+    //END STATS TIME
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    double statsEnd = MPI_Wtime();
+
+    double statsTime = statsEnd - statsStart;
+
+
+    vector<double> processMean(worldSize);
+ 
+    // Gather local means to Master
+    MPI_Gather(
+        &localMean,
+        1,
+        MPI_DOUBLE,
+        processMean.data(),
+        1,
+        MPI_DOUBLE,
         0,
         MPI_COMM_WORLD
     );
+
+    for(int i = 0; i < worldSize; i++)
+    {
+        if(rank == i)
+        {
+            cout << "Process "
+                << rank
+                << " processed "
+                << localSize
+                << " values."
+                << endl;
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    // Combine results from all processes
+
+        MPI_Gather(
+            localX.data(),
+            localSize,
+            MPI_DOUBLE,
+            globalSortedData.data(),   // <-- Compiler stops here
+            localSize,
+            MPI_DOUBLE,
+            0,
+            MPI_COMM_WORLD
+        );
+        
+
 
     MPI_Reduce(&localSumX, &globalSumX, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
@@ -381,9 +465,14 @@ if(rank == 0)
     MPI_Reduce(&localSumX2, &globalSumX2, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
     MPI_Reduce(&localSumY2, &globalSumY2, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    
+    MPI_Barrier(MPI_COMM_WORLD);
 
+    double correlationEnd = MPI_Wtime();
 
-    // Stop timer
+    double correlationTime =
+        correlationEnd - correlationStart;
+    
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -420,8 +509,13 @@ if(rank == 0)
     // Local Outlier Detection (All Processes)
     //------------------------------------------------------
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    double outlierStart = MPI_Wtime();
+
     int localOutliers = 0;
 
+    compStart = MPI_Wtime();
     for(double value : localX)
     {
         double z = (value - globalMean) / globalStdDev;
@@ -431,7 +525,11 @@ if(rank == 0)
             localOutliers++;
         }
     }
+    compEnd = MPI_Wtime();
 
+    computationTime += compEnd-compStart;
+
+    commStart = MPI_Wtime();
     MPI_Reduce(
         &localOutliers,
         &globalOutliers,
@@ -441,6 +539,15 @@ if(rank == 0)
         0,
         MPI_COMM_WORLD
     );
+    commEnd = MPI_Wtime();
+    communicationTime += commEnd-commStart;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    double outlierEnd = MPI_Wtime();
+
+    double outlierTime =
+        outlierEnd - outlierStart;
 
     if(rank == 0)
     {
@@ -509,7 +616,31 @@ if(rank == 0)
         cout << "===================================================" << endl;
 
         cout << endl;
+        cout << "\n========== TASK EXECUTION TIME ==========\n";
 
+        cout << "Statistics          : " << statsTime << " s" << endl;
+        cout << "Histogram           : " << histogramTime << " s" << endl;
+        cout << "Parallel Sorting    : " << sortTime << " s" << endl;
+        cout << "Correlation         : " << correlationTime << " s" << endl;
+        cout << "Moving Average      : " << movingAverageTime << " s" << endl;
+        cout << "Outlier Detection   : " << outlierTime << " s" << endl;
+        cout << "=========================================\n";
+        
+        cout << "\n========== MPI PERFORMANCE ==========\n";
+
+        cout << "Total Computation Time : "
+            << computationTime
+            << " s" << endl;
+
+        cout << "Total Communication Time : "
+            << communicationTime
+            << " s" << endl;
+
+        cout << "Communication Overhead : "
+            << (communicationTime / (computationTime + communicationTime)) * 100
+            << " %" << endl;
+
+        cout << "=====================================\n";
         cout << "MPI Execution Time : "
             << (end - start)
             << " seconds"
