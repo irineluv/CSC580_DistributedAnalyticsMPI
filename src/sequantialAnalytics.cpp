@@ -198,6 +198,10 @@ int main(int argc, char *argv[])
     file << "MovingAvg: " << t_mov << " ms\n";
     file << "Outliers: " << t_out << " ms\n";
 
+    file << "\nTOTAL TIME : "
+         << (t_stats + t_hist + t_sort + t_corr + t_mov + t_out)
+         << " ms\n";
+
     file.close();
 
     // ================= CONSOLE OUTPUT =================
