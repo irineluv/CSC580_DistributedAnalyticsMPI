@@ -154,7 +154,6 @@ int main(int argc, char *argv[])
     // 2 HISTOGRAM
     s = timeNow();
     auto h = histogram(a);
-    cout << "\n--- Histogram ---\n";
     for (int i = 0; i < h.size(); i++)
     {
         cout << "Bin " << i << ": " << h[i] << endl;
@@ -165,7 +164,6 @@ int main(int argc, char *argv[])
     // 3 SORT
     s = timeNow();
     sortData(a);
-    cout << "\n--- Sorted Data Sample ---\n";
     for (int i = 0; i < 10; i++)
     {
         cout << a[i] << " ";
@@ -177,14 +175,12 @@ int main(int argc, char *argv[])
     // 4 CORR
     s = timeNow();
     double c = corr(a, b);
-    cout << "\nCorrelation: " << c << endl;
     e = timeNow();
     t_corr = e - s;
 
     // 5 MOVING AVG
     s = timeNow();
     auto m = movingAvg(a);
-    cout << "\n--- Moving Average Sample ---\n";
     for (int i = 0; i < 10; i++)
     {
         cout << m[i] << " ";
@@ -229,5 +225,39 @@ int main(int argc, char *argv[])
 
     file.close();
 
-    cout << "Sequential done\n";
+    cout << "\n========== TASK RESULTS ==========\n";
+
+    // 1 STATS RESULT
+    cout << "\n[1] STATISTICS\n";
+    cout << "Mean: " << mean << endl;
+    cout << "Min: " << minV << endl;
+    cout << "Max: " << maxV << endl;
+    cout << "Std Dev: " << stdv << endl;
+
+    // 2 HISTOGRAM
+    cout << "\n[2] HISTOGRAM (first 5 bins)\n";
+    for (int i = 0; i < 5; i++)
+        cout << "Bin " << i << ": " << h[i] << endl;
+
+    // 3 SORT
+    cout << "\n[3] SORT (first 10 values)\n";
+    for (int i = 0; i < 10; i++)
+        cout << a[i] << " ";
+    cout << endl;
+
+    // 4 CORRELATION
+    cout << "\n[4] CORRELATION\n";
+    cout << "Value: " << c << endl;
+
+    // 5 MOVING AVG
+    cout << "\n[5] MOVING AVERAGE (first 10)\n";
+    for (int i = 0; i < 10; i++)
+        cout << m[i] << " ";
+    cout << endl;
+
+    // 6 OUTLIERS
+    cout << "\n[6] OUTLIERS\n";
+    cout << "Count: " << o.size() << endl;
+
+    return 0;
 }
