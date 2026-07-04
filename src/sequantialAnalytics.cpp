@@ -154,30 +154,49 @@ int main(int argc, char *argv[])
     // 2 HISTOGRAM
     s = timeNow();
     auto h = histogram(a);
+    cout << "\n--- Histogram ---\n";
+    for (int i = 0; i < h.size(); i++)
+    {
+        cout << "Bin " << i << ": " << h[i] << endl;
+    }
     e = timeNow();
     t_hist = e - s;
 
     // 3 SORT
     s = timeNow();
     sortData(a);
+    cout << "\n--- Sorted Data Sample ---\n";
+    for (int i = 0; i < 10; i++)
+    {
+        cout << a[i] << " ";
+    }
+    cout << endl;
     e = timeNow();
     t_sort = e - s;
 
     // 4 CORR
     s = timeNow();
     double c = corr(a, b);
+    cout << "\nCorrelation: " << c << endl;
     e = timeNow();
     t_corr = e - s;
 
     // 5 MOVING AVG
     s = timeNow();
     auto m = movingAvg(a);
+    cout << "\n--- Moving Average Sample ---\n";
+    for (int i = 0; i < 10; i++)
+    {
+        cout << m[i] << " ";
+    }
+    cout << endl;
     e = timeNow();
     t_mov = e - s;
 
     // 6 OUTLIERS
     s = timeNow();
     auto o = outliers(a, mean, stdv);
+    cout << "\nOutliers Count: " << o.size() << endl;
     e = timeNow();
     t_out = e - s;
 
@@ -202,6 +221,9 @@ int main(int argc, char *argv[])
     cout << "Correlation: " << (t_corr) << endl;
     cout << "Moving Avg: " << (t_mov) << endl;
     cout << "Outliers: " << (t_out) << endl;
+
+    double total = t_stats + t_hist + t_sort + t_corr + t_mov + t_out;
+    cout << "\nTOTAL TIME: " << total << " ms\n";
 
     cout << "=======================================\n";
 

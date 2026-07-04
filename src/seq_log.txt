@@ -1,1 +1,6 @@
-Task,Time(ms)
+Stats: 26.7507 ms
+Histogram: 21.1482 ms
+Sort: 422.504 ms
+Correlation: 69.1013 ms
+MovingAvg: 66.3552 ms
+Outliers: 9.52734 ms
