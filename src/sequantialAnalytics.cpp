@@ -25,6 +25,7 @@ vector<double> generate(int N)
     vector<double> data(N);
     for (auto &x : data)
         x = dist(rng);
+
     return data;
 }
 
@@ -61,6 +62,7 @@ vector<int> histogram(vector<double> &a, int bins = 10)
         int idx = min((int)(x / 10000.0 * bins), bins - 1);
         h[idx]++;
     }
+
     return h;
 }
 
@@ -111,8 +113,10 @@ vector<double> movingAvg(vector<double> &a, int w = 5)
             sum += a[j];
             cnt++;
         }
+
         res.push_back(sum / cnt);
     }
+
     return res;
 }
 
@@ -127,74 +131,65 @@ vector<int> outliers(vector<double> &a, double mean, double stdv)
         if (abs(z) > 3)
             idx.push_back(i);
     }
+
     return idx;
 }
 
 // ================= MAIN =================
 int main(int argc, char *argv[])
 {
-
     int N = stoi(argv[1]);
-
-    ofstream file("seq_log.txt");
 
     vector<double> a = generate(N);
     vector<double> b = generate(N);
 
-    double s, e;
-    double t_stats, t_hist, t_sort, t_corr, t_mov, t_out;
     double mean, minV, maxV, stdv;
+    double t_stats, t_hist, t_sort, t_corr, t_mov, t_out;
 
-    // 1 STATS
-    s = timeNow();
+    // ================= 1. STATS =================
+    double s = timeNow();
     stats(a, mean, minV, maxV, stdv);
-    e = timeNow();
+    double e = timeNow();
     t_stats = e - s;
 
-    // 2 HISTOGRAM
+    // ================= 2. HISTOGRAM =================
     s = timeNow();
     auto h = histogram(a);
-    for (int i = 0; i < h.size(); i++)
-    {
-        cout << "Bin " << i << ": " << h[i] << endl;
-    }
     e = timeNow();
     t_hist = e - s;
 
-    // 3 SORT
+    // ================= 3. SORT =================
     s = timeNow();
     sortData(a);
-    for (int i = 0; i < 10; i++)
-    {
-        cout << a[i] << " ";
-    }
-    cout << endl;
+    vector<double> sorted = a;
     e = timeNow();
     t_sort = e - s;
 
-    // 4 CORR
+    // ================= 4. CORRELATION =================
     s = timeNow();
     double c = corr(a, b);
     e = timeNow();
     t_corr = e - s;
 
-    // 5 MOVING AVG
+    // ================= 5. MOVING AVG =================
     s = timeNow();
     auto m = movingAvg(a);
-    for (int i = 0; i < 10; i++)
-    {
-        cout << m[i] << " ";
-    }
-    cout << endl;
     e = timeNow();
     t_mov = e - s;
 
-    // 6 OUTLIERS
+    // ================= 6. OUTLIERS =================
     s = timeNow();
     auto o = outliers(a, mean, stdv);
-    cout << "\nOutliers Count: " << o.size() << endl;
     e = timeNow();
     t_out = e - s;
+
+    // ================= OUTPUT FILE =================
+    ofstream file("seq_log.txt");
+
+    file << "Mean: " << mean << "\n";
+    file << "Min: " << minV << "\n";
+    file << "Max: " << maxV << "\n";
+    file << "StdDev: " << stdv << "\n\n";
 
     file << "Stats: " << t_stats << " ms\n";
     file << "Histogram: " << t_hist << " ms\n";
@@ -203,61 +198,53 @@ int main(int argc, char *argv[])
     file << "MovingAvg: " << t_mov << " ms\n";
     file << "Outliers: " << t_out << " ms\n";
 
-    cout << "\n========== SEQUENTIAL RESULTS ==========\n";
-
-    cout << "Mean: " << mean << endl;
-    cout << "Min: " << minV << endl;
-    cout << "Max: " << maxV << endl;
-    cout << "Std Dev: " << stdv << endl;
-
-    cout << "\nExecution Times (ms):\n";
-    cout << "Stats: " << (t_stats) << endl;
-    cout << "Histogram: " << (t_hist) << endl;
-    cout << "Sort: " << (t_sort) << endl;
-    cout << "Correlation: " << (t_corr) << endl;
-    cout << "Moving Avg: " << (t_mov) << endl;
-    cout << "Outliers: " << (t_out) << endl;
-
-    double total = t_stats + t_hist + t_sort + t_corr + t_mov + t_out;
-    cout << "\nTOTAL TIME: " << total << " ms\n";
-
-    cout << "=======================================\n";
-
     file.close();
 
-    cout << "\n========== TASK RESULTS ==========\n";
+    // ================= CONSOLE OUTPUT =================
+    cout << "\n======================================\n";
+    cout << "        SEQUENTIAL ANALYTICS RESULTS\n";
+    cout << "======================================\n";
 
-    // 1 STATS RESULT
     cout << "\n[1] STATISTICS\n";
-    cout << "Mean: " << mean << endl;
-    cout << "Min: " << minV << endl;
-    cout << "Max: " << maxV << endl;
-    cout << "Std Dev: " << stdv << endl;
+    cout << "Mean    : " << mean << endl;
+    cout << "Min     : " << minV << endl;
+    cout << "Max     : " << maxV << endl;
+    cout << "Std Dev : " << stdv << endl;
 
-    // 2 HISTOGRAM
     cout << "\n[2] HISTOGRAM (first 5 bins)\n";
     for (int i = 0; i < 5; i++)
         cout << "Bin " << i << ": " << h[i] << endl;
 
-    // 3 SORT
     cout << "\n[3] SORT (first 10 values)\n";
     for (int i = 0; i < 10; i++)
-        cout << a[i] << " ";
+        cout << sorted[i] << " ";
     cout << endl;
 
-    // 4 CORRELATION
     cout << "\n[4] CORRELATION\n";
-    cout << "Value: " << c << endl;
+    cout << "Value : " << c << endl;
 
-    // 5 MOVING AVG
     cout << "\n[5] MOVING AVERAGE (first 10)\n";
     for (int i = 0; i < 10; i++)
         cout << m[i] << " ";
     cout << endl;
 
-    // 6 OUTLIERS
     cout << "\n[6] OUTLIERS\n";
-    cout << "Count: " << o.size() << endl;
+    cout << "Count : " << o.size() << endl;
+
+    cout << "\n========== EXECUTION TIMES (ms) ==========\n";
+    cout << "Stats       : " << t_stats << endl;
+    cout << "Histogram   : " << t_hist << endl;
+    cout << "Sort        : " << t_sort << endl;
+    cout << "Correlation : " << t_corr << endl;
+    cout << "Moving Avg  : " << t_mov << endl;
+    cout << "Outliers    : " << t_out << endl;
+
+    cout << "\nTOTAL TIME : "
+         << (t_stats + t_hist + t_sort + t_corr + t_mov + t_out)
+         << " ms\n";
+
+    cout << "======================================\n";
+    cout << "Sequential Done\n";
 
     return 0;
 }
