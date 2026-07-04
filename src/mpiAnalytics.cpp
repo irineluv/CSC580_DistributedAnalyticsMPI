@@ -153,9 +153,6 @@ if(rank == 0)
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    double start=MPI_Wtime();
-
-    // Scatter dataset from Master to all processes
 
     // Scatter Dataset X
     MPI_Scatter(
@@ -186,6 +183,9 @@ if(rank == 0)
     //------------------------------------------------------
 
     MPI_Barrier(MPI_COMM_WORLD);
+
+    double start=MPI_Wtime();
+
     double statsStart = MPI_Wtime();
 
 
@@ -630,11 +630,11 @@ if(rank == 0)
 
         cout << "Total Computation Time : "
             << computationTime
-            << "m/s" << endl;
+            << "s" << endl;
 
         cout << "Total Communication Time : "
             << communicationTime
-            << "m/s" << endl;
+            << "s" << endl;
 
         cout << "Communication Overhead : "
             << (communicationTime / (computationTime + communicationTime)) * 100
@@ -643,7 +643,7 @@ if(rank == 0)
         cout << "=====================================\n";
         cout << "MPI Execution Time : "
             << (end - start)
-            << " m/s"
+            << " s"
             << endl;
     }
     
