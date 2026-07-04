@@ -630,11 +630,11 @@ if(rank == 0)
 
         cout << "Total Computation Time : "
             << computationTime
-            << " s" << endl;
+            << "m/s" << endl;
 
         cout << "Total Communication Time : "
             << communicationTime
-            << " s" << endl;
+            << "m/s" << endl;
 
         cout << "Communication Overhead : "
             << (communicationTime / (computationTime + communicationTime)) * 100
@@ -643,7 +643,7 @@ if(rank == 0)
         cout << "=====================================\n";
         cout << "MPI Execution Time : "
             << (end - start)
-            << " seconds"
+            << " m/s"
             << endl;
     }
     
