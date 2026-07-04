@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 
     cout << "\n[2] HISTOGRAM (first 5 bins)\n";
     cout << "------------------------------\n";
-    for (int i = 0; i < 5; i++)
+    for (int i = 1; i < 10; i++)
         cout << "Bin " << i << ": " << h[i] << endl;
 
     cout << "\n[3] SORT (first 20 values)\n";
