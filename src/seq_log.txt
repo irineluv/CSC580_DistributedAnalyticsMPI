@@ -3,9 +3,9 @@ Min: 0.00808798
 Max: 9999.99
 StdDev: 2885.74
 
-Stats: 27.1375 ms
-Histogram: 20.751 ms
-Sort: 419.43 ms
-Correlation: 70.061 ms
-MovingAvg: 66.7493 ms
-Outliers: 9.77222 ms
+Stats: 27.7258 ms
+Histogram: 20.6885 ms
+Sort: 411.947 ms
+Correlation: 68.6646 ms
+MovingAvg: 66.231 ms
+Outliers: 9.34375 ms

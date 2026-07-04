@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
     cout << "Max     : " << maxV << endl;
     cout << "Std Dev : " << stdv << endl;
 
-    cout << "\n[2] HISTOGRAM (first 5 bins)\n";
+    cout << "\n[2] HISTOGRAM (first 10 bins)\n";
     cout << "------------------------------\n";
     for (int i = 1; i < 10; i++)
         cout << "Bin " << i << ": " << h[i] << endl;
