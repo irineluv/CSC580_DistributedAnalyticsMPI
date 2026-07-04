@@ -1,6 +1,11 @@
-Stats: 26.7507 ms
-Histogram: 21.1482 ms
-Sort: 422.504 ms
-Correlation: 69.1013 ms
-MovingAvg: 66.3552 ms
-Outliers: 9.52734 ms
+Mean: 5004.56
+Min: 0.00808798
+Max: 9999.99
+StdDev: 2885.74
+
+Stats: 26.8806 ms
+Histogram: 20.4912 ms
+Sort: 416.714 ms
+Correlation: 67.2537 ms
+MovingAvg: 66.9788 ms
+Outliers: 9.19995 ms
